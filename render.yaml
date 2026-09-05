@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: ip-strategy-dashboard
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: IP_STRATEGY_ORDER_FLOW_ENABLED
+        value: "false"
+      - key: IP_STRATEGY_PRESERVE_LEVELS_ON_FAILURE
+        value: "true"

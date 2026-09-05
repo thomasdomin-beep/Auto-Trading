@@ -1,0 +1,10 @@
+interval_minutes: 5
+underlying: NATURALGAS
+instrument: optfut  # options on futures (MCX has no index options for commodities)
+premium_field: ltp
+mcx_proxy_base_url: http://127.0.0.1:3001  # from option-premium-calculator/mcx-proxy
+output_dir: output
+preserve_levels_on_failure: true
+bridge_host: 127.0.0.1
+bridge_port: 8769
+auto_clipboard: false

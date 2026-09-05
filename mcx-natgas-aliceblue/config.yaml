@@ -1,0 +1,26 @@
+# Underlying + exchange for Aliceblue's Option Chain API.
+underlying: "NATURALGAS"
+exch: "mcx_fo"
+
+# Strike price interval passed to getOptionChain. Aliceblue only accepts
+# 5, 10, 15, 20 or 25 here. Check the live MCX Natural Gas chain and adjust
+# if this doesn't match the real strike spacing.
+strike_interval: 10
+
+# How often (seconds) the dashboard polls Aliceblue for fresh LTP/ATP data.
+# Market Data calls are batched into a single request per poll (4 tokens),
+# so this is well within Aliceblue's "Quote API: 5 requests/second" limit.
+poll_seconds: 5
+
+bridge_host: "127.0.0.1"
+bridge_port: 8770
+
+# Local, gitignored files. Never commit these.
+session_path: ".aliceblue_session.json"
+output_dir: "output"
+
+# Must exactly match the Redirect URL configured on your Developer Portal
+# App (a3.aliceblueonline.com -> My Apps), otherwise Aliceblue's login page
+# will redirect somewhere `mcx-atp login` isn't listening.
+redirect_host: "127.0.0.1"
+redirect_port: 8771

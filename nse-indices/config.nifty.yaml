@@ -1,0 +1,12 @@
+interval_minutes: 5
+underlying: NIFTY  # NIFTY | BANKNIFTY
+premium_field: ltp  # ltp | mid
+daily_low_mode: current_session  # current_session | last_closed (same 1D chart min for now)
+daily_low_use_premium_fallback: true
+nse_base_url: https://www.nseindia.com
+output_dir: output/nifty
+preserve_levels_on_failure: true
+chart_request_delay_seconds: 0.2
+bridge_host: 127.0.0.1
+bridge_port: 8767
+auto_clipboard: false

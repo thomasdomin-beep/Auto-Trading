@@ -1,0 +1,14 @@
+interval_minutes: 5
+underlying: ETH
+perp_symbol: ETHUSD
+premium_field: mark_price  # mark_price | close | mid
+daily_low_mode: current_session  # current_session | last_closed
+delta_base_url: https://api.india.delta.exchange
+output_dir: output
+preserve_levels_on_failure: true
+candle_request_delay_seconds: 0.15
+bridge_host: 127.0.0.1
+bridge_port: 8765
+auto_clipboard: false
+order_flow_enabled: true
+order_flow_poll_seconds: 3.0

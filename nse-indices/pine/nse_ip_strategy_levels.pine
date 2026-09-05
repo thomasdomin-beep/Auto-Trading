@@ -1,0 +1,38 @@
+//@version=6
+indicator("NSE IP Strategy S/R", overlay=true, max_lines_count=500)
+
+supportInput = input.float(0.0, "Support (strike)", minval=0, group="Levels")
+resistanceInput = input.float(0.0, "Resistance (strike)", minval=0, group="Levels")
+idealPremiumInput = input.float(0.0, "Ideal Premium (IP)", minval=0, group="Debug")
+strikeAInput = input.float(0.0, "Strike A", minval=0, group="Debug")
+strikeBInput = input.float(0.0, "Strike B", minval=0, group="Debug")
+showDebug = input.bool(true, "Show debug table", group="Debug")
+computedAtIstInput = input.string("", "Computed at (IST)", group="Debug")
+
+var line supportLine = na
+var line resistanceLine = na
+
+if barstate.islast and supportInput > 0
+    if not na(supportLine)
+        line.delete(supportLine)
+    supportLine := line.new(bar_index - 50, supportInput, bar_index + 10, supportInput, color=color.new(color.green, 0), width=2, extend=extend.right)
+
+if barstate.islast and resistanceInput > 0
+    if not na(resistanceLine)
+        line.delete(resistanceLine)
+    resistanceLine := line.new(bar_index - 50, resistanceInput, bar_index + 10, resistanceInput, color=color.new(color.red, 0), width=2, extend=extend.right)
+
+var table dbg = table.new(position.top_right, 2, 6, bgcolor=color.new(color.black, 80))
+if barstate.islast and showDebug
+    table.cell(dbg, 0, 0, "IP", text_color=color.white)
+    table.cell(dbg, 1, 0, str.tostring(idealPremiumInput, "#.####"), text_color=color.white)
+    table.cell(dbg, 0, 1, "Strike A", text_color=color.white)
+    table.cell(dbg, 1, 1, str.tostring(strikeAInput, "#.##"), text_color=color.white)
+    table.cell(dbg, 0, 2, "Strike B", text_color=color.white)
+    table.cell(dbg, 1, 2, str.tostring(strikeBInput, "#.##"), text_color=color.white)
+    table.cell(dbg, 0, 3, "Support", text_color=color.green)
+    table.cell(dbg, 1, 3, str.tostring(supportInput, "#.##"), text_color=color.green)
+    table.cell(dbg, 0, 4, "Resistance", text_color=color.red)
+    table.cell(dbg, 1, 4, str.tostring(resistanceInput, "#.##"), text_color=color.red)
+    table.cell(dbg, 0, 5, "Computed (IST)", text_color=color.gray)
+    table.cell(dbg, 1, 5, computedAtIstInput, text_color=color.gray)

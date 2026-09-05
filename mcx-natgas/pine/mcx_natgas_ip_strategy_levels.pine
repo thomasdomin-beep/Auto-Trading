@@ -1,0 +1,34 @@
+//@version=6
+indicator("MCX Natural Gas IP Strategy LHS/RHS", overlay=true, max_lines_count=500)
+
+lhsInput = input.float(0.0, "LHS (strike price)", minval=0, group="Levels")
+rhsInput = input.float(0.0, "RHS (strike price)", minval=0, group="Levels")
+idealPremiumInput = input.float(0.0, "Ideal Premium (IP)", minval=0, group="Debug")
+showDebug = input.bool(true, "Show debug table", group="Debug")
+computedAtIstInput = input.string("", "Computed at (IST)", group="Debug")
+
+var line lhsLine = na
+var line rhsLine = na
+
+if barstate.islast and lhsInput > 0
+    if not na(lhsLine)
+        line.delete(lhsLine)
+    lhsLine := line.new(bar_index - 50, lhsInput, bar_index + 10, lhsInput, color=color.new(color.green, 0), width=2, extend=extend.right)
+    label.new(bar_index, lhsInput, "LHS " + str.tostring(lhsInput, "#.##"), style=label.style_label_left, color=color.green, textcolor=color.white, size=size.small)
+
+if barstate.islast and rhsInput > 0
+    if not na(rhsLine)
+        line.delete(rhsLine)
+    rhsLine := line.new(bar_index - 50, rhsInput, bar_index + 10, rhsInput, color=color.new(color.red, 0), width=2, extend=extend.right)
+    label.new(bar_index, rhsInput, "RHS " + str.tostring(rhsInput, "#.##"), style=label.style_label_left, color=color.red, textcolor=color.white, size=size.small)
+
+var table dbg = table.new(position.top_right, 2, 4, bgcolor=color.new(color.black, 80))
+if barstate.islast and showDebug
+    table.cell(dbg, 0, 0, "IP", text_color=color.white)
+    table.cell(dbg, 1, 0, str.tostring(idealPremiumInput, "#.####"), text_color=color.white)
+    table.cell(dbg, 0, 1, "LHS", text_color=color.green)
+    table.cell(dbg, 1, 1, str.tostring(lhsInput, "#.##"), text_color=color.green)
+    table.cell(dbg, 0, 2, "RHS", text_color=color.red)
+    table.cell(dbg, 1, 2, str.tostring(rhsInput, "#.##"), text_color=color.red)
+    table.cell(dbg, 0, 3, "Computed (IST)", text_color=color.gray)
+    table.cell(dbg, 1, 3, computedAtIstInput, text_color=color.gray)

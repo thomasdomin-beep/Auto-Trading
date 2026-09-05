@@ -1,0 +1,14 @@
+interval_minutes: 5
+sensex_scrip_cd: "1"
+premium_field: ltp  # ltp | mid | close
+daily_low_mode: current_session  # current_session | last_closed
+daily_low_use_premium_fallback: true  # if chart low unavailable, use chain LTP for that leg
+bse_api_base: https://api.bseindia.com/BseIndiaAPI/api
+bse_referer: https://www.bseindia.com/stock-share-price/future-options/derivatives/1/
+output_dir: output
+preserve_levels_on_failure: true
+header_request_delay_seconds: 0.12
+bridge_host: 127.0.0.1
+bridge_port: 8766
+auto_clipboard: false
+tradingview_symbol: BSE:SENSEX
