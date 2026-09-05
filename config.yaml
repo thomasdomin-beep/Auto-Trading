@@ -12,3 +12,15 @@ bridge_port: 8765
 auto_clipboard: false
 order_flow_enabled: true
 order_flow_poll_seconds: 3.0
+
+# Auto-trading (ETHUSD live orders, see README "Auto-trading" section).
+# Off by default; set to true only when you're ready to trade live.
+# Credentials are NEVER set here - use the IP_STRATEGY_DELTA_*_API_KEY/SECRET
+# environment variables instead.
+trading_enabled: false
+trading_leverage: 25
+trading_capital_fraction: 0.25
+trading_entry_offsets: [2.0, 8.0, 18.0, 28.0]
+trading_tp_offset: 2.0
+trading_poll_minutes: 5
+

@@ -6,7 +6,7 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 RUN pip install --no-cache-dir -e .
 
-COPY config.yaml ./
+COPY config.yaml config.testnet.yaml ./
 
 ENV IP_STRATEGY_BRIDGE_HOST=0.0.0.0
 

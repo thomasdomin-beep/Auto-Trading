@@ -49,6 +49,17 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("serve-bridge", parents=[parent], help="Serve local levels UI only")
 
+    sub.add_parser(
+        "trade",
+        parents=[parent],
+        help=(
+            "Run the ETHUSD auto-trader continuously: recompute levels and "
+            "reconcile the 4 resting entry orders on an interval. Places "
+            "real live orders; requires trading_enabled: true and the "
+            "IP_STRATEGY_DELTA_MAIN_*/DELTA_SCALPER_* API key env vars."
+        ),
+    )
+
     args = parser.parse_args(argv)
     cfg = AppConfig.load(args.config)
     if args.expiry:
@@ -66,6 +77,70 @@ def main(argv: list[str] | None = None) -> int:
         if cfg.order_flow_enabled:
             start_order_flow_thread(cfg, of_state, state)
         serve(cfg, state, of_state)
+        return 0
+
+    if args.command == "trade":
+        from ip_strategy.auto_trader import run_trading_cycle
+        from ip_strategy.delta_trading_client import DeltaTradingClient
+
+        if not cfg.trading_enabled:
+            logging.getLogger(__name__).error(
+                "trading_enabled is false; refusing to start the trader. "
+                "Set trading_enabled: true in config.yaml once you're ready to trade live."
+            )
+            return 1
+        missing = [
+            name
+            for name, value in (
+                ("delta_main_api_key", cfg.delta_main_api_key),
+                ("delta_main_api_secret", cfg.delta_main_api_secret),
+                ("delta_scalper_api_key", cfg.delta_scalper_api_key),
+                ("delta_scalper_api_secret", cfg.delta_scalper_api_secret),
+            )
+            if not value
+        ]
+        if missing:
+            logging.getLogger(__name__).error(
+                "Missing required credentials: %s. Set them via IP_STRATEGY_* env vars.",
+                ", ".join(missing),
+            )
+            return 1
+
+        state = RunState(cfg.expiry_date)
+        main_client = DeltaTradingClient(
+            cfg.delta_base_url, cfg.delta_main_api_key, cfg.delta_main_api_secret
+        )
+        scalper_client = DeltaTradingClient(
+            cfg.delta_base_url, cfg.delta_scalper_api_key, cfg.delta_scalper_api_secret
+        )
+
+        def trading_job() -> None:
+            levels = execute_run(cfg, state=state)
+            try:
+                run_trading_cycle(cfg, levels, main_client, scalper_client)
+            except Exception:
+                logging.getLogger(__name__).exception("Trading cycle failed")
+
+        scheduler = BlockingScheduler()
+        scheduler.add_job(
+            trading_job,
+            "interval",
+            minutes=cfg.trading_poll_minutes,
+            id="ip_strategy_trade",
+            max_instances=1,
+            coalesce=True,
+        )
+        logging.getLogger(__name__).info(
+            "Auto-trader started; interval=%s minutes", cfg.trading_poll_minutes
+        )
+        trading_job()
+        try:
+            scheduler.start()
+        except (KeyboardInterrupt, SystemExit):
+            pass
+        finally:
+            main_client.close()
+            scalper_client.close()
         return 0
 
     if args.command == "schedule":

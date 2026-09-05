@@ -10,3 +10,25 @@ services:
         value: "false"
       - key: IP_STRATEGY_PRESERVE_LEVELS_ON_FAILURE
         value: "true"
+
+  # Continuous auto-trader against Delta's TESTNET (fake money), for the
+  # 1-week validation run. Background workers have no free tier on Render;
+  # this uses the smallest paid plan (0.5 CPU / 512 MB). Set the 4
+  # IP_STRATEGY_DELTA_*_API_KEY/SECRET testnet credentials in the Render
+  # dashboard when creating this service (sync: false = prompted, never
+  # stored in this file).
+  - type: worker
+    name: ip-strategy-testnet-trader
+    runtime: docker
+    plan: 0.5c-512mb
+    dockerfilePath: ./Dockerfile
+    dockerCommand: ip-strategy trade -c config.testnet.yaml
+    envVars:
+      - key: IP_STRATEGY_DELTA_MAIN_API_KEY
+        sync: false
+      - key: IP_STRATEGY_DELTA_MAIN_API_SECRET
+        sync: false
+      - key: IP_STRATEGY_DELTA_SCALPER_API_KEY
+        sync: false
+      - key: IP_STRATEGY_DELTA_SCALPER_API_SECRET
+        sync: false

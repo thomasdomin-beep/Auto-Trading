@@ -111,3 +111,19 @@ class StrategyLevels(BaseModel):
             "strike_a": self.strike_a,
             "strike_b": self.strike_b,
         }
+
+
+class TargetOrder(BaseModel):
+    """One of the ETHUSD entry orders (4-rung ladder per account) the
+    auto-trader wants resting.
+
+    `slot` is a stable identifier (e.g. "main_1") used to tag orders (via
+    client_order_id) so the trader can recognise its own resting orders on
+    later cycles for cancel/replace when levels move.
+    """
+
+    slot: str
+    account: str  # "main" or "scalper"
+    side: str  # "buy" or "sell"
+    price: float
+    take_profit_price: float

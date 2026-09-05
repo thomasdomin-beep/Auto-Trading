@@ -7,4 +7,5 @@ output/
 dist/
 build/
 .env
+.env.*
 .aliceblue_session.json

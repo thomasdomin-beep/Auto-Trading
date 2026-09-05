@@ -110,8 +110,93 @@ pytest
 | `preserve_levels_on_failure` | Keep last good levels when a run fails |
 | `order_flow_enabled` | Enable/disable the continuous Buy CE / Buy PE order-flow poller |
 | `order_flow_poll_seconds` | Poll interval (seconds) for the order-flow signal |
+| `trading_enabled` | Master switch for the auto-trader (`ip-strategy trade`); **false by default** |
+| `trading_leverage` | Leverage applied to both accounts before sizing orders (default `25`) |
+| `trading_capital_fraction` | Fraction of live available balance risked per new entry order (default `0.25`) |
+| `trading_entry_offsets` | $ offsets for the 1st–4th entry orders: `support - offset` (buy) / `resistance + offset` (sell). Default `[2, 8, 18, 28]` |
+| `trading_tp_offset` | $ offset for every order's take-profit (`resistance - offset` for buys, `support + offset` for sells), recomputed fresh each cycle. Default `2` |
+| `trading_poll_minutes` | How often the auto-trader recomputes levels and reconciles orders (default `5`) |
 
 Environment overrides use prefix `IP_STRATEGY_` (e.g. `IP_STRATEGY_INTERVAL_MINUTES=5`).
+
+## Auto-trading (ETHUSD, live real-money orders)
+
+`ip-strategy trade` runs a continuous service that turns the computed LHS/RHS
+into four resting ETHUSD entry orders across **two Delta Exchange India
+accounts** (your main account, long, and a "Scalper" sub-account, short), each
+with a bracket take-profit attached. **There is no stop-loss** — positions run
+until their take-profit fills. Read this whole section before enabling it.
+
+### Order logic
+
+`support = min(LHS, RHS)`, `resistance = max(LHS, RHS)`. Every `trading_poll_minutes`, each account has a **4-rung entry ladder** (`trading_entry_offsets`, default `[2, 8, 18, 28]`):
+
+| Account | Side | Entry (1st–4th) | Take-profit |
+|---|---|---|---|
+| main | buy | `support - offset[i]` for offset in `[2, 8, 18, 28]` | `resistance - trading_tp_offset` |
+| scalper | sell | `resistance + offset[i]` for offset in `[2, 8, 18, 28]` | `support + trading_tp_offset` |
+
+Every order's take-profit is recomputed **fresh from the current levels each
+cycle** (not fixed from whenever the order was first placed) — e.g. if
+resistance is 2500 when the 2nd main order is placed, its target is 2498; if
+resistance later moves to 2510 while that order is still resting, a replaced
+order's target becomes 2508.
+
+Each entry order is sized at `trading_capital_fraction` (default 25%) of that
+account's **live available USD balance** × `trading_leverage` (default 25x).
+If a level moves, the bot cancels its own stale resting order at that slot and
+places a new one at the new price. If a level is unchanged, it places
+**another** entry at that same price every cycle (pyramiding), as long as the
+account still has enough available margin — once available balance can't fund
+another slice, it stops placing new entries for that slot until margin frees
+up (a take-profit fills, a stale order is cancelled, etc.). Filled positions
+and their take-profit orders are never touched by the bot.
+
+### Credentials (two separate API key pairs, never in config.yaml)
+
+Delta API keys can't trade on behalf of a sub-account from the parent's key —
+you must generate a **separate key while logged into the Scalper sub-account
+itself**. For both keys: enable **Trading** permission and **whitelist the
+static IP** of the machine running `ip-strategy trade` (see hosting below).
+Set these as environment variables (not in `config.yaml`):
+
+```bash
+export IP_STRATEGY_DELTA_MAIN_API_KEY=...
+export IP_STRATEGY_DELTA_MAIN_API_SECRET=...
+export IP_STRATEGY_DELTA_SCALPER_API_KEY=...
+export IP_STRATEGY_DELTA_SCALPER_API_SECRET=...
+```
+
+### Hosting: needs a static, whitelistable IP
+
+Delta's Trading-permission keys require IP whitelisting, and Render's free
+tier has a dynamic egress IP, so the dashboard's Render deployment **cannot**
+also run the trader. Use an **Oracle Cloud "Always Free" tier VM** instead
+(free forever, not a trial — a real VM with a static public IP):
+
+1. Sign up at [oracle.com/cloud/free](https://www.oracle.com/cloud/free/) (a
+   card is required for identity verification but isn't charged unless you
+   upgrade to Pay-As-You-Go).
+2. Create an **Always Free** Compute instance (an AMD or Ampere A1 shape).
+   Note its public IP once running.
+3. Whitelist that IP on both Delta API keys.
+4. On the VM: install Docker, then run this project the same way as the
+   dashboard (see the repo's Dockerfile), overriding the command to
+   `ip-strategy trade` and passing the four `IP_STRATEGY_DELTA_*` env vars
+   plus `IP_STRATEGY_TRADING_ENABLED=true`.
+
+### Enabling it
+
+`trading_enabled` defaults to `false` so the feature is inert until you
+deliberately turn it on:
+
+```bash
+export IP_STRATEGY_TRADING_ENABLED=true
+ip-strategy trade -c config.yaml
+```
+
+The CLI refuses to start if `trading_enabled` is false or any of the four
+credential env vars are missing.
 
 ## Disclaimer
 
