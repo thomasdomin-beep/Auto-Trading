@@ -200,14 +200,35 @@ def run_trading_cycle(
 
             client_order_id = f"{slot_prefix}{int(time.time() * 1000)}"[:32]
             try:
-                client.place_order(
-                    product_id=product_id,
-                    side=target.side,
-                    size=size,
-                    limit_price=format_price(target_price, tick_size),
-                    client_order_id=client_order_id,
-                    bracket_take_profit_price=format_price(tp_price, tick_size),
-                )
+                try:
+                    client.place_order(
+                        product_id=product_id,
+                        side=target.side,
+                        size=size,
+                        limit_price=format_price(target_price, tick_size),
+                        client_order_id=client_order_id,
+                        bracket_take_profit_price=format_price(tp_price, tick_size),
+                    )
+                except RuntimeError as exc:
+                    # Delta attaches a bracket take-profit to the *position*, not the
+                    # order: once any ladder rung fills and opens a position, every
+                    # later bracket order on the same side is rejected with this code.
+                    # The existing bracket already covers the whole position (same TP
+                    # for every rung by design), so retry as a plain entry order.
+                    if "bracket_order_position_exists" not in str(exc):
+                        raise
+                    client.place_order(
+                        product_id=product_id,
+                        side=target.side,
+                        size=size,
+                        limit_price=format_price(target_price, tick_size),
+                        client_order_id=client_order_id,
+                    )
+                    logger.info(
+                        "%s/%s: position already has a bracket TP; placed plain entry",
+                        account,
+                        target.slot,
+                    )
                 logger.info(
                     "%s/%s: placed %s order size=%s price=%s tp=%s",
                     account,

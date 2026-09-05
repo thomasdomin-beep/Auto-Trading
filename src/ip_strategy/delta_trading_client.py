@@ -77,7 +77,10 @@ class DeltaTradingClient:
         r = self._client.request(
             method, path, params=params, content=payload or None, headers=headers
         )
-        r.raise_for_status()
+        if r.is_error:
+            raise RuntimeError(
+                f"Delta API error on {method} {path}: HTTP {r.status_code} - {r.text}"
+            )
         body = r.json()
         if not body.get("success", True):
             raise RuntimeError(f"Delta API error on {method} {path}: {body}")

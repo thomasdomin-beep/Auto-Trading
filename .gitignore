@@ -9,3 +9,5 @@ build/
 .env
 .env.*
 .aliceblue_session.json
+testnet_trade.log
+pmset_noidle.log
